@@ -75,8 +75,7 @@ for i in range(0, len(classes)):
 # Compute suffix pairs frequencies
 n = len(suffixes)	# forcing floating operations
 for k, val in Counter(suffixes).items():
-	if val >= alpha:
-		alpha_frequencies.add((k, val))
+	alpha_frequencies.add((k, val))
 
 # clearing memory
 del suffixes
