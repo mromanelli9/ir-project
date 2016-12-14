@@ -10,7 +10,11 @@ def lcp(x, y):
 		x = y
 		y = t
 
-	return sum([el == y[i] for i, el in enumerate(x)])
+	i = 0
+	while ((x[i] == y[i]) and (i < len(x)-1)):
+		i += 1
+
+	return i
 
 lexicon = ["leg", "legs", "legalize", "execute", "executive", "legal"]
 l = 4 			# thresold value for suffix pair identification ()
