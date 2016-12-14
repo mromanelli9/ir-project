@@ -1,49 +1,33 @@
-#!/Users/Marco/anaconda2/bin/python
+#
+#  Module:    GRASS (main module)
+#  Authors:   Federico Ghirardelli, Marco Romanelli
+#  A.A.:     2016-2017
+#
+
+from LCP import lcp
+from CS import lcs
 from collections import Counter
 
-def lcp(x, y):
-	# len(x) must be < than len(y)
-	if not x or not y:
-		return 0
+def printClass(classes):
+	i=0
+	for item in classes:
+	    print "class ",
+	    print i,
+	    print " :",
+	    print item
+	    i +=1
+	
 
-	if len(x) > len(y):
-		t = x
-		x = y
-		y = t
-
-	i = 0
-	while ((i < len(x)) and (x[i] == y[i])):
-		i += 1
-
-	return i
-
-l = 4 			# thresold value for suffix pair identification (NB: default value)
-alpha = 6		# suffix frequency cut-off
-
-lexicon = []
+lexicon = ["leg", "legs", "legalize", "execute", "executive", "legal", "legging", "legroom", "legitimization", "legislations", "legendary", "executioner", "executable", "executed", "farmer", "farmhouse", "farmworks", "farming", "farms", "asian", "asiatic", "asianization", "india", "indian", "indianapolis", "indiana", "pieceworker", "piercings", "piercers", "pied", "indians", "indianina" , "legionnaire", "legitimized", "legitimator", "legalizer", "legalizing", "legwarmer", "leghorns" , "legally", "farmse", "barse" , "bars" ,"aaaa" , "aaaaa"]
+l = 4		# thresold value for suffix pair identification ()
 classes = [[]]
-alpha_frequencies = set()
 
-# Grouping words in classes
-lexicon_lengths = []
-fp = open('English.dic', 'r')
-for w in fp:
-	word = w.strip()
-	lexicon.append(w)
 
-	lexicon_lengths.append(len(word))
-fp.close()
-
-print "Lexicon contain %d words." % len(lexicon)
-
-# updating l value
-l = sum(lexicon_lengths)/len(lexicon)
-
-# clearing memomry
-del fp
-del lexicon_lengths
-
+#print lexicon
 lexicon.sort()
+print "----------------------------------------------"
+#print lexicon
+
 
 i = 0
 j = 0
@@ -59,33 +43,40 @@ while (i < len(lexicon)):
 	
 	i += 1
 
-del classes[j]		# empty class
+del classes[j]	# empty class
 
-print "%d classes are been created. (l=%d)" % (len(classes), l)
+printClass(classes)
 
-# Phase 1: Identify Suffix Pair
-suffixes = []
-for i in range(0, len(classes)):
-	c_class = classes.pop()		# C_i
+suffix_array = []
 
-	for k in range(0, len(c_class)):
-		for j in range(0, k):
-			(w1, w2) = (c_class[j], c_class[k])
-			
-			r = lcp(w1, w2)
-			pair = (w1[r:], w2[r:])
-			suffixes.append(tuple((sorted(pair)))) 	# per sicurezza (doppioni in ordine inverso)
+for m in range(0, len(classes), 1):
+	for j in range(0, len(classes[m]), 1):
+		for k in range(j+1, len(classes[m]), 1):
+	    		
+			suffix_array.append(lcs(classes[m][j], classes[m][k]))
 
-# Compute suffix pairs frequencies
-n = len(suffixes)	# forcing floating operations
-for k, val in Counter(suffixes).items():
-	alpha_frequencies.add((k, val))
+counter = Counter(suffix_array)
+print(counter)
 
-# clearing memory
-del suffixes
-del classes		# dopo servono? boh
-#print alpha_frequencies
-print "%d suffixes are been found. (alpha=%d)" % (len(alpha_frequencies), alpha)
-
-print "End."
 quit()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
