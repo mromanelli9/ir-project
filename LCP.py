@@ -11,7 +11,7 @@ def lcp(x, y):
 		y = t
 
 	i = 0
-	while ((x[i] == y[i]) and (i < len(x)-1)):
+	while ((i < len(x)) and (x[i] == y[i])):
 		i += 1
 
 	return i
