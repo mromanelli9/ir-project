@@ -51,88 +51,6 @@ def cohesion(vicini_p, vicini_v):
 	cohe = (1 + len(set(vicini_p).intersection(vicini_v))) / len(vicini_v)
 	return cohe
 
-def generateGraph(lexiconOriginal, alpha, count, neigh):
-
-	g = Graph()	
-	lexicon = lexiconOriginal
-	g.add_vertices(len(lexicon))
-	layout = g.layout_kamada_kawai()
-	for i in range(0, len(lexicon)):  # creo un nodo per ogni parola
-		g.vs[i]["name"] = lexicon[i]
-		g.vs[i]["label"] = lexicon[i]
-
-	k = 0
-	# scorro ttute le coppie di suffissi
-	for sx, (words, f) in count.items():
-		# se la frequenza della coppia e' almeno alpha
-		if f >= alpha:
-			w1, w2 = words
-			g.add_edge(w1, w2)		 # aggiungo l'arco che unisce le due parole
-			g.es[k]["peso"] = count[sx][1]  # peso = frequenza
-			g.es[k]["label"] = [sx, count[sx]]
-			k += 1
-
-	###################### Algoritmo 2 ############################
-
-	while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto)
-	
-		S = []
-		classe_S = []
-		vicini_list = []
-		pesoArchi = []
-		dicNodoArco = {} # dizionario
-		gradi = g.degree() # lista dei gradi per ogni nodo
-		index, value = max(enumerate(gradi), key=itemgetter(1)) # indice e valore del nodo con grado maggiore
-
-		u = g.vs[index] 
-		print "nodo con grado maggiore : ",
-		print u["label"],
-		print " index : ",
-		print index
-		S.append(index)
-		classe_S.append(u["label"])
-	
-		vicini_u = g.neighbors(u) # lista posizioni dei vicini
-		print "\n"
-		print "nodi vicini a u: ",
-		print vicini_u
-
-		for el in vicini_u:
-			# lista dei nodi vicini 
-			vert = (g.vs.select(el)) #memorizzato come oggetto vertice
-			edge = g.es.find(_between=((index,), (el,))) # edge(u,v)
-			peso = edge["peso"]
-			dicNodoArco[vert] = [edge, peso, el]
-
-		#print dicNodoArco
-		#ordina il dizionario per peso degli archi decrescente
-		dicNodoArco_sorted = sorted(dicNodoArco.items(), key=itemgetter(1), reverse=True) 
-		#print dicNodoArco_sorted
-
-		# 4 :
-		for nodo, peso in dicNodoArco_sorted:
-			v = nodo
-			vicini_v = g.neighbors(peso[2]) # vicini di v
-			if cohesion(vicini_u, vicini_v) >= gamma:
-				classe_S.append(nodo["label"])
-			else:
-				delete_edges(peso[0])
-
-		# 11 : Output the class S
-		classes.append(classe_S)
-		print "S : ",
-		print classe_S
-
-	
-		# 12 : From G remove the vertices in S and their incident edges.
-		#for el in S:
-		g.delete_vertices(S)
-			
-		# non creo G' perche' ho gia' tolto i nodi da G
-
-	#layout = g.layout_circle()
-	#plot(g, layout = layout)
-
 
 
 ##############################################################
@@ -170,7 +88,6 @@ lexicon.sort()
 print "----------------------------------------------"
 #print lexicon
 
-
 i = 0
 j = 0
 while (i < len(lexicon)):
@@ -199,6 +116,86 @@ for m in range(0, len(classes), 1):
 				(ws, freq) = frequencies[pair]
 				frequencies.update({pair: (ws, freq + 1)})
 
-generateGraph(lexicon, alpha, frequencies, gamma)
+# Removing classes (useless)
+classes = []
+
+g = Graph(directed=False)	
+g.add_vertices(len(lexicon))
+layout = g.layout_kamada_kawai()
+for i in range(0, len(lexicon)):  # creo un nodo per ogni parola
+	g.vs[i]["name"] = lexicon[i]
+	g.vs[i]["label"] = lexicon[i]
+
+k = 0
+# scorro ttute le coppie di suffissi
+for sx, (words, f) in frequencies.items():
+	# se la frequenza della coppia e' almeno alpha
+	if f >= alpha:
+		w1, w2 = words
+		g.add_edge(w1, w2)		 # aggiungo l'arco che unisce le due parole
+		g.es[k]["peso"] = frequencies[sx][1]  # peso = frequenza
+		g.es[k]["label"] = [sx, frequencies[sx]]
+		k += 1
+
+###################### Algoritmo 2 ############################
+while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto)
+	S = []
+	classe_S = []
+	vicini_list = []
+	pesoArchi = []
+	dicNodoArco = {} # dizionario
+	gradi = g.degree() # lista dei gradi per ogni nodo
+	index, value = max(enumerate(gradi), key=itemgetter(1)) # indice e valore del nodo con grado maggiore
+
+	u = g.vs[index] 
+	print "nodo con grado maggiore : ",			# = pivot
+	print u["label"],
+	print " index : ",
+	print index
+	S.append(index)
+	classe_S.append(u["label"])
+
+	vicini_u = g.neighbors(u) # lista posizioni dei vicini
+	print "\n"
+	print "nodi vicini a u: ",
+	print vicini_u
+
+	for el in vicini_u:
+		# lista dei nodi vicini 
+		vert = (g.vs.select(el)) #memorizzato come oggetto vertice
+		edge = g.es.find(_between=((index,), (el,))) # edge(u,v)
+		peso = edge["peso"]
+		dicNodoArco[vert] = [edge, peso, el]
+
+	#print dicNodoArco
+	#ordina il dizionario per peso degli archi decrescente
+	dicNodoArco_sorted = sorted(dicNodoArco.items(), key=itemgetter(1), reverse=True) 
+	#print dicNodoArco_sorted
+
+	# 4 :
+	for nodo, peso in dicNodoArco_sorted:
+		v = nodo
+		vicini_v = g.neighbors(peso[2]) # vicini di v
+		if cohesion(vicini_u, vicini_v) >= gamma:
+			classe_S.append(nodo["label"])
+		else:
+			g.delete_edges(peso[0])
+
+	# 11 : Output the class S
+	classes.append(classe_S)
+	print "S : ",
+	print classe_S
+
+
+	# 12 : From G remove the vertices in S and their incident edges.
+	#for el in S:
+	g.delete_vertices(S)
+		
+	# non creo G' perche' ho gia' tolto i nodi da G
+
+#layout = g.layout_circle()
+#plot(g, layout = layout)
+
+printClass(classes)
 
 quit()
