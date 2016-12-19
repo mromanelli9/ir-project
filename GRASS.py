@@ -57,18 +57,19 @@ def generateGraph(lexiconOriginal, alpha, count, neigh):
 	g.add_vertices(len(lexicon))
 	layout = g.layout_kamada_kawai()
 	for i in range(0, len(lexicon)):  # creo un nodo per ogni parola
+		g.vs[i]["name"] = lexicon[i]
 		g.vs[i]["label"] = lexicon[i]
 
 	k = 0
-	for i in range(0, len(lexicon)):
-		for j in range(i+1, len(lexicon)-1):  #scorro ogni coppia di parole
-			prefix = lcs(lexicon[i], lexicon[j])
-			if (prefix in count) and (count[prefix]>= alpha):	# se la coppia prefissi e' in counter e
-																# se la frequenza della coppia e' almeno alpha
-				g.add_edges([(i,j)]) # aggiungo l'arco che unisce le due parole
-				g.es[k]["peso"] = count[prefix]  # peso = alpha-freq
-				g.es[k]["label"] = [prefix, count[prefix]]
-				k += 1
+	# scorro ttute le coppie di suffissi
+	for sx, (words, f) in count.items():
+		# se la frequenza della coppia e' almeno alpha
+		if f >= alpha:
+			w1, w2 = words
+			g.add_edge(w1, w2)		 # aggiungo l'arco che unisce le due parole
+			g.es[k]["peso"] = count[sx][1]  # peso = frequenza
+			g.es[k]["label"] = [sx, count[sx]]
+			k += 1
 
 	###################### Algoritmo 2 ############################
 
@@ -82,7 +83,6 @@ def generateGraph(lexiconOriginal, alpha, count, neigh):
 		gradi = g.degree() # lista dei gradi per ogni nodo
 		index, value = max(enumerate(gradi), key=itemgetter(1)) # indice e valore del nodo con grado maggiore
 
-		print g
 		u = g.vs[index] 
 		print "nodo con grado maggiore : ",
 		print u["label"],
@@ -161,31 +161,29 @@ j = 0
 while (i < len(lexicon)):
 	w1 = lexicon[i]
 	w2 = lexicon[i+1] if (i < len(lexicon)-1) else ""
-
 	classes[j].append(w1)
-
 	if lcp(w1, w2) < l:
 		classes.append([])
 		j += 1
-	
 	i += 1
 
 del classes[j]	# empty class
 
 printClass(classes)
 
-suffix_array = []
-
+frequencies = {}
 for m in range(0, len(classes), 1):
 	for j in range(0, len(classes[m]), 1):
 		for k in range(j+1, len(classes[m]), 1):
-	    		
-			suffix_array.append(lcs(classes[m][j], classes[m][k]))
+			w1 = classes[m][j]
+			w2 = classes[m][k]
+			pair = lcs(w1, w2)
+			if pair not in frequencies.keys(): 
+				frequencies.update({pair: ((w1, w2), 1)})
+			else:
+				(ws, freq) = frequencies[pair]
+				frequencies.update({pair: (ws, freq + 1)})
 
-counter = Counter(suffix_array)
-print(counter)
-print "\n\n"
-
-generateGraph(lexicon, alpha, counter, gamma)
+generateGraph(lexicon, alpha, frequencies, gamma)
 
 quit()
