@@ -1,26 +1,49 @@
 #
-#  Module:    GRASS (main module)
 #  Authors:   Federico Ghirardelli, Marco Romanelli
-#  A.A.:     2016-2017
+#  A.A.:      2016-2017
 #
 
-from LCP import lcp
-from CS import lcs
 from collections import Counter
 from igraph import *
-import operator
+from operator import itemgetter
 
-l = 4
-alpha = 1
-gamma = 0.5
+##############################################################
+###############   FUNCTIONS AND SUBROUTINES   ################
+##############################################################
+
+# Compute Longest Common Prefix
+def lcp(x, y):
+	# len(x) must be shorter than len(y)
+
+	if not x or not y:
+		return 0
+
+	if len(x) > len(y):
+		t = x
+		x = y
+		y = t
+
+	i = 0
+	while ((i < len(x)) and (x[i] == y[i])):
+		i += 1
+
+	return i
+
+def lcs(x, y):
+	n_suffix = lcp(x, y)
+
+	copyX = x[n_suffix:]
+	copyY = y[n_suffix:]
+
+	if(copyX>copyY):
+		return copyX, copyY
+	else:
+		return copyY, copyX
 
 def printClass(classes):
 	i=0
 	for item in classes:
-	    print "class ",
-	    print i,
-	    print " :",
-	    print item
+	    print "class %i: %s" % (i, item)
 	    i +=1
 
 def cohesion(vicini_p, vicini_v):
@@ -34,27 +57,22 @@ def generateGraph(lexiconOriginal, alpha, count, neigh):
 	g.add_vertices(len(lexicon))
 	layout = g.layout_kamada_kawai()
 	for i in range(0, len(lexicon)):  # creo un nodo per ogni parola
-		g.vs[i]["word"] = lexicon[i]
 		g.vs[i]["label"] = lexicon[i]
 
-	i = 0
-	j = 0
 	k = 0
 	for i in range(0, len(lexicon)):
 		for j in range(i+1, len(lexicon)-1):  #scorro ogni coppia di parole
 			prefix = lcs(lexicon[i], lexicon[j])
-			if prefix in count:	# se la coppia prefissi e' in counter
-				if( count[prefix]>= alpha): # se la frequenza della coppia e' almeno alpha
-		    			g.add_edges([(i,j)]) # aggiungo l'arco che unisce le due parole
-					g.es[k]["peso"] = count[prefix]  # peso = alpha-freq
-					g.es[k]["label"] = [prefix, count[prefix]]
-					k +=1
+			if (prefix in count) and (count[prefix]>= alpha):	# se la coppia prefissi e' in counter e
+																# se la frequenza della coppia e' almeno alpha
+				g.add_edges([(i,j)]) # aggiungo l'arco che unisce le due parole
+				g.es[k]["peso"] = count[prefix]  # peso = alpha-freq
+				g.es[k]["label"] = [prefix, count[prefix]]
+				k += 1
 
 	###################### Algoritmo 2 ############################
 
-	seq = g.vs.select()  # numero di nodi del grafo
-
-	while not len(seq) == 0:  #while pricipale (finche' il sotto grafo non e' vuoto)
+	while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto)
 	
 		S = []
 		classe_S = []
@@ -62,15 +80,16 @@ def generateGraph(lexiconOriginal, alpha, count, neigh):
 		pesoArchi = []
 		dicNodoArco = {} # dizionario
 		gradi = g.degree() # lista dei gradi per ogni nodo
-		index, value = max(enumerate(gradi), key=operator.itemgetter(1)) # indice e valore del nodo con grado maggiore
+		index, value = max(enumerate(gradi), key=itemgetter(1)) # indice e valore del nodo con grado maggiore
 
+		print g
 		u = g.vs[index] 
 		print "nodo con grado maggiore : ",
-		print u["word"],
+		print u["label"],
 		print " index : ",
 		print index
 		S.append(index)
-		classe_S.append(u["word"])
+		classe_S.append(u["label"])
 	
 		vicini_u = g.neighbors(u) # lista posizioni dei vicini
 		print "\n"
@@ -86,7 +105,7 @@ def generateGraph(lexiconOriginal, alpha, count, neigh):
 
 		#print dicNodoArco
 		#ordina il dizionario per peso degli archi decrescente
-		dicNodoArco_sorted = sorted(dicNodoArco.items(), key=operator.itemgetter(1), reverse=True) 
+		dicNodoArco_sorted = sorted(dicNodoArco.items(), key=itemgetter(1), reverse=True) 
 		#print dicNodoArco_sorted
 
 		# 4 :
@@ -94,12 +113,12 @@ def generateGraph(lexiconOriginal, alpha, count, neigh):
 			v = nodo
 			vicini_v = g.neighbors(peso[2]) # vicini di v
 			if cohesion(vicini_u, vicini_v) >= gamma:
-				S.append(peso[2])
-				classe_S.append(nodo["word"])
+				classe_S.append(nodo["label"])
 			else:
 				delete_edges(peso[0])
 
 		# 11 : Output the class S
+		classes.append(classe_S)
 		print "S : ",
 		print classe_S
 
@@ -108,15 +127,21 @@ def generateGraph(lexiconOriginal, alpha, count, neigh):
 		#for el in S:
 		g.delete_vertices(S)
 			
-		
-		seq = g.vs.select() # aggiorno numero di nodi rimasti in G
 		# non creo G' perche' ho gia' tolto i nodi da G
 
+	#layout = g.layout_circle()
+	#plot(g, layout = layout)
 
-	layout = g.layout_circle()
-	plot(g, layout = layout)
-	
-		
+
+
+##############################################################
+###############  			 MAIN   		  ################
+##############################################################
+
+# Stemmer parameters
+l = 4
+alpha = 1 			# debugging iniziale
+gamma = 0.8
 	
 
 lexicon = ["leg", "legs", "legalize", "execute", "executive", "legal", "legging", "legroom", "legitimization", "legislations", "legendary", "executioner", "executable", "executed", "farmer", "farmhouse", "farmworks", "farming", "farms", "asian", "asiatic", "asianization", "india", "indian", "indianapolis", "indiana", "pieceworker", "piercings", "piercers", "pied", "indians", "indianina" , "legionnaire", "legitimized", "legitimator", "legalizer", "legalizing", "legwarmer", "leghorns" , "legally", "farmse", "barse" , "bars" ,"aaaa" , "aaaaa"]
