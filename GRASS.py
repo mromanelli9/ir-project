@@ -3,6 +3,7 @@
 #  A.A.:      2016-2017
 #
 
+import getopt, sys
 from collections import Counter
 from igraph import *
 from operator import itemgetter
@@ -138,11 +139,25 @@ def generateGraph(lexiconOriginal, alpha, count, neigh):
 ###############  			 MAIN   		  ################
 ##############################################################
 
-# Stemmer parameters
+# Default stemmer parameters
 l = 4
 alpha = 1 			# debugging iniziale
 gamma = 0.8
-	
+
+# Overriding value if passed as argument in command line
+try:                                
+	opts, args = getopt.getopt(sys.argv[1:], "", ["alpha=", "gamma=", "l="])
+except getopt.GetoptError:          
+	print "- Unknown command."                        
+	quit()    
+
+for opt, arg in opts:                
+	if opt == '--alpha':                
+		alpha = int(arg) 
+	elif opt == '--l':                
+		l = int(arg) 
+	elif opt == '--gamma':                
+		alpha = float(arg)
 
 lexicon = ["leg", "legs", "legalize", "execute", "executive", "legal", "legging", "legroom", "legitimization", "legislations", "legendary", "executioner", "executable", "executed", "farmer", "farmhouse", "farmworks", "farming", "farms", "asian", "asiatic", "asianization", "india", "indian", "indianapolis", "indiana", "pieceworker", "piercings", "piercers", "pied", "indians", "indianina" , "legionnaire", "legitimized", "legitimator", "legalizer", "legalizing", "legwarmer", "leghorns" , "legally", "farmse", "barse" , "bars" ,"aaaa" , "aaaaa"]
 
