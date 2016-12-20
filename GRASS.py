@@ -56,7 +56,7 @@ def cohesion(p_neighbors, v_neighbors):
 # Default stemmer parameters
 l = 4
 l_forced = False
-alpha = 1 			# debugging iniziale
+alpha = 6
 delta = 0.8
 
 # Overriding value if passed as argument in command line
@@ -91,7 +91,7 @@ lexicon_lengths = []
 fp = open(lexicon_path, "r")
 for w in fp:
 	word = w.strip()
-	lexicon.append(w)
+	lexicon.append(word)
 
 	lexicon_lengths.append(len(word))
 fp.close()
@@ -106,11 +106,11 @@ classes = [[]]
 # sort lexicon
 lexicon.sort()
 
-print "+ Creating classes of words..."
+print "+ Clustering words..."
 # clustering words into classes
 i = 0
 j = 0
-while (i < len(lexicon)):
+while (i < len(lexicon)) and (i<1000):
 	w1 = lexicon[i]
 	w2 = lexicon[i+1] if (i < len(lexicon)-1) else ""
 	classes[j].append(w1)
@@ -120,13 +120,13 @@ while (i < len(lexicon)):
 	i += 1
 
 del classes[j]	# empty class
-print "+ Classes created..."
+print "+ Done."
 
 print "+ Computing alpha-frequencies..."
 frequencies = {}
 for m in range(0, len(classes), 1):
-	for j in range(0, len(classes[m]), 1):
-		for k in range(j+1, len(classes[m]), 1):
+	for j in range(0, len(classes[m])):
+		for k in range(j+1, len(classes[m])):
 			w1 = classes[m][j]
 			w2 = classes[m][k]
 			pair = lcs(w1, w2)
@@ -136,6 +136,8 @@ for m in range(0, len(classes), 1):
 				(ws, freq) = frequencies[pair]
 				frequencies.update({pair: (ws, freq + 1)})
 print "+ Done."
+
+quit()
 
 print "+ Generating graph..."
 # "Clearing" old classes
