@@ -89,7 +89,7 @@ for opt, arg in opts:
 		l_forced = True
 	elif opt == '--delta':                
 		delta = float(arg)
-		print "+ Value of delta overriden: %d." % delta
+		print "+ Value of delta overriden: %.1f." % delta
 
 if lexicon_path is None:
 	print "- Missing lexicon file."                        
@@ -168,8 +168,8 @@ for sx, (words, f) in frequencies.items():
 											# con il peso dell'alpha-frequency
 
 # if something weird happened
-if len(g.es) < 10:
-	print "- The number of edges is too low (%d). Quitting." % len(g.es)
+if len(g.es) == 0:
+	print "- The number of edges is equal to zero. Something wrong?"
 	quit()
 
 print "\t+ G=(V,E) with |V|=%d and |E|=%d." % (len(g.vs), len(g.es))
@@ -227,6 +227,12 @@ for v in g.vs:
 # removing names
 del g
 print "+ Classed created."
+
+print
+print
+print classes[:4]
+print
+print
 
 
 print "+ Storing stems..."
