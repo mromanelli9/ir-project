@@ -59,6 +59,9 @@ l_forced = False
 alpha = 6
 delta = 0.8
 
+# Output file path
+stems_file_path = "stems.txt"
+
 # Overriding value if passed as argument in command line
 lexicon_path = None
 try:
@@ -89,11 +92,16 @@ print "+ Parsing lexicon..."
 lexicon = []
 lexicon_lengths = []
 fp = open(lexicon_path, "r")
+i = 0
 for w in fp:
 	word = w.strip()
 	lexicon.append(word)
-
 	lexicon_lengths.append(len(word))
+
+	# blocco per debugging
+	if i > 1000:
+		break
+
 fp.close()
 print "+ Lexicon parsed."
 
@@ -137,8 +145,6 @@ for m in range(0, len(classes), 1):
 				frequencies.update({pair: (ws, freq + 1)})
 print "+ Done."
 
-quit()
-
 print "+ Generating graph..."
 # "Clearing" old classes
 classes = []
@@ -155,9 +161,10 @@ for sx, (words, f) in frequencies.items():
 		g.add_edge(w1, w2, weight=f)		 # aggiungo l'arco che unisce le due parole
 											# con il peso dell'alpha-frequency
 
-print "+ Identifyng classes..."
 ###################### Algoritmo 2 ############################
-while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto)
+print "+ Identifyng classes..."
+jj = 0
+while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto
 	S = []
 
 	degree_list = g.degree() # lista dei gradi per ogni nodo
@@ -183,7 +190,10 @@ while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto)
 
 	# output class S
 	classes.append([g.vs[v]["name"] for v in S])
-	print "\t+ Class created."
+	print "\t+ #%d class created." % jj
+	sys.stdout.write("\033[F")							# printing on the same line
+	#sys.stdout.flush()
+	jj += 1
 
 	# Rimuovo da G i veritici in S e gli archi incidenti
 	g.delete_vertices(S)
@@ -192,7 +202,13 @@ while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto)
 del g
 print "+ Classed created."
 
-print "+ Storing stemmers file..."
+print "+ Storing stems..."
+fp = open(stems_file_path, "w")
+for c in classes:
+	for word in c[1:]:
+		fp.write("%s\t%s\n" % (word, c[0]))
+
+fp.close()
 
 print "+ Done. Bye."
 quit()
