@@ -41,16 +41,14 @@ def lcs(x, y):
 	else:
 		return copyY, copyX
 
+def cohesion(p_neighbors, v_neighbors):
+	return (1 + len(set(p_neighbors).intersection(v_neighbors))) / len(v_neighbors)
+
 def printClass(classes):
 	i=0
 	for item in classes:
 	    print "class %i: %s" % (i, item)
 	    i +=1
-
-def cohesion(vicini_p, vicini_v):
-	cohe = (1 + len(set(vicini_p).intersection(vicini_v))) / len(vicini_v)
-	return cohe
-
 
 
 ##############################################################
@@ -60,7 +58,7 @@ def cohesion(vicini_p, vicini_v):
 # Default stemmer parameters
 l = 4
 alpha = 1 			# debugging iniziale
-gamma = 0.8
+delta = 0.8
 
 # Overriding value if passed as argument in command line
 try:                                
@@ -116,86 +114,54 @@ for m in range(0, len(classes), 1):
 				(ws, freq) = frequencies[pair]
 				frequencies.update({pair: (ws, freq + 1)})
 
-# Removing classes (useless)
+# "Clearing" old classes
 classes = []
 
 g = Graph(directed=False)	
-g.add_vertices(len(lexicon))
-layout = g.layout_kamada_kawai()
 for i in range(0, len(lexicon)):  # creo un nodo per ogni parola
-	g.vs[i]["name"] = lexicon[i]
-	g.vs[i]["label"] = lexicon[i]
+	g.add_vertex(lexicon[i])
 
-k = 0
 # scorro ttute le coppie di suffissi
 for sx, (words, f) in frequencies.items():
 	# se la frequenza della coppia e' almeno alpha
 	if f >= alpha:
 		w1, w2 = words
-		g.add_edge(w1, w2)		 # aggiungo l'arco che unisce le due parole
-		g.es[k]["peso"] = frequencies[sx][1]  # peso = frequenza
-		g.es[k]["label"] = [sx, frequencies[sx]]
-		k += 1
+		g.add_edge(w1, w2, weight=f)		 # aggiungo l'arco che unisce le due parole
+											# con il peso dell'alpha-frequency
 
 ###################### Algoritmo 2 ############################
 while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto)
 	S = []
-	classe_S = []
-	vicini_list = []
-	pesoArchi = []
-	dicNodoArco = {} # dizionario
-	gradi = g.degree() # lista dei gradi per ogni nodo
-	index, value = max(enumerate(gradi), key=itemgetter(1)) # indice e valore del nodo con grado maggiore
 
-	u = g.vs[index] 
-	print "nodo con grado maggiore : ",			# = pivot
-	print u["label"],
-	print " index : ",
-	print index
-	S.append(index)
-	classe_S.append(u["label"])
+	degree_list = g.degree() # lista dei gradi per ogni nodo
+	index, value = max(enumerate(degree_list), key=operator.itemgetter(1)) # indice e valore del nodo con grado maggiore
+	u = g.vs[index] 			# = pivot
 
-	vicini_u = g.neighbors(u) # lista posizioni dei vicini
-	print "\n"
-	print "nodi vicini a u: ",
-	print vicini_u
+	S.append(index)				# S={u}
 
-	for el in vicini_u:
-		# lista dei nodi vicini 
-		vert = (g.vs.select(el)) #memorizzato come oggetto vertice
-		edge = g.es.find(_between=((index,), (el,))) # edge(u,v)
-		peso = edge["peso"]
-		dicNodoArco[vert] = [edge, peso, el]
+	u_adjacency = g.neighbors(u)
+	u_dec_adjacency = []
+	for v in u_adjacency:
+		edge_id = g.get_eid(u, v)
+		w = g.es[edge_id]["weight"]
+		u_dec_adjacency.append((v, w))
 
-	#print dicNodoArco
-	#ordina il dizionario per peso degli archi decrescente
-	dicNodoArco_sorted = sorted(dicNodoArco.items(), key=itemgetter(1), reverse=True) 
-	#print dicNodoArco_sorted
+	u_dec_adjacency.sort(key=operator.itemgetter(1), reverse=True)	# ordino secondo il peso in ordine decrescente
 
-	# 4 :
-	for nodo, peso in dicNodoArco_sorted:
-		v = nodo
-		vicini_v = g.neighbors(peso[2]) # vicini di v
-		if cohesion(vicini_u, vicini_v) >= gamma:
-			classe_S.append(nodo["label"])
+	for (v, weight) in u_dec_adjacency:
+		if cohesion(u_adjacency,g.neighbors(v)) >= delta:
+			S.append(v)
 		else:
-			g.delete_edges(peso[0])
+			g.delete_edge(g.get_eid(u, v))
 
-	# 11 : Output the class S
-	classes.append(classe_S)
-	print "S : ",
-	print classe_S
+	# output class S
+	classes.append([g.vs[v]["name"] for v in S])
 
-
-	# 12 : From G remove the vertices in S and their incident edges.
-	#for el in S:
+	# Rimuovo da G i veritici in S e gli archi incidenti
 	g.delete_vertices(S)
-		
-	# non creo G' perche' ho gia' tolto i nodi da G
 
-#layout = g.layout_circle()
-#plot(g, layout = layout)
-
-printClass(classes)
+print
+for c in classes:
+	print "Stem: %s, parole: %s" % (c[0], c[1:]) 
 
 quit()
