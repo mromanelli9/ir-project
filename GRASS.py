@@ -48,27 +48,33 @@ def lcs(x, y):
 def cohesion(p_neighbors, v_neighbors):
 	return (1 + len(set(p_neighbors).intersection(v_neighbors))) / len(v_neighbors)
 
+def help_message():
+	print "Usage: python GRASS.py -l <lexicon-path> [OPTIONS]\n"                 
+	quit()
+
 
 ##############################################################
 ###############  			 MAIN   		  ################
 ##############################################################
 
 # Default stemmer parameters
-l = 4
+l = 5
 l_forced = False
-alpha = 6
+alpha = 4
 delta = 0.8
 
 # Output file path
 stems_file_path = "stems.txt"
+
+if len(sys.argv) < 2:
+	help_message()
 
 # Overriding value if passed as argument in command line
 lexicon_path = None
 try:
 	opts, args = getopt(sys.argv[1:], "l:", ["alpha=", "delta=", "l="])
 except GetoptError:          
-	print "- Unknown command."                        
-	quit()    
+	    help_message()
 for opt, arg in opts:     
 	if opt == "-l":
 		if not ((type(arg) is str) and path.isfile(arg)):
@@ -94,6 +100,10 @@ lexicon_lengths = []
 fp = open(lexicon_path, "r")
 i = 0
 for w in fp:
+	# blocco per debugging
+	if i < 500:
+		i += 1
+		continue
 	word = w.strip()
 	lexicon.append(word)
 	lexicon_lengths.append(len(word))
@@ -101,6 +111,8 @@ for w in fp:
 	# blocco per debugging
 	if i > 1000:
 		break
+
+	i += 1
 
 fp.close()
 print "+ Lexicon parsed."
@@ -113,6 +125,7 @@ if not l_forced:
 classes = [[]]
 # sort lexicon
 lexicon.sort()
+
 
 print "+ Clustering words..."
 # clustering words into classes
@@ -145,6 +158,7 @@ for m in range(0, len(classes), 1):
 				frequencies.update({pair: (ws, freq + 1)})
 print "+ Done."
 
+
 print "+ Generating graph..."
 # "Clearing" old classes
 classes = []
@@ -161,10 +175,16 @@ for sx, (words, f) in frequencies.items():
 		g.add_edge(w1, w2, weight=f)		 # aggiungo l'arco che unisce le due parole
 											# con il peso dell'alpha-frequency
 
+# if something weird happened
+if len(g.es) < 10:
+	print "- The number of edges is too low (%d). Quitting." % len(g.es)
+	quit()
+
 ###################### Algoritmo 2 ############################
 print "+ Identifyng classes..."
 jj = 0
-while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto
+early_quitting = False
+while (g.vcount() != 0) and not early_quitting:  #while pricipale (finche' il sottografo non e' vuoto
 	S = []
 
 	degree_list = g.degree() # lista dei gradi per ogni nodo
@@ -186,25 +206,42 @@ while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto
 		if cohesion(u_adjacency,g.neighbors(v)) >= delta:
 			S.append(v)
 		else:
-			g.delete_edge(g.get_eid(u, v))
+			g.delete_edges(g.get_eid(u, v))
 
 	# output class S
 	classes.append([g.vs[v]["name"] for v in S])
-	print "\t+ #%d class created." % jj
+	
+	print "\t+ %d class created." % jj
 	sys.stdout.write("\033[F")							# printing on the same line
-	#sys.stdout.flush()
+	sys.stdout.flush()
 	jj += 1
 
 	# Rimuovo da G i veritici in S e gli archi incidenti
 	g.delete_vertices(S)
 
+	# loop breaking
+	if len(g.es) == 0:
+		early_quitting = True
+
+sys.stdout.write("\r\033[K")				# esoteric stuff to clear terminal line
+
+# when quitting with early_quitting=True there're still vertex in the graph to be added in some class(es)
+# I assume that there'd go in singleton sets ---> ???
+for v in g.vs:
+	classes.append([v["name"]])
+
 # removing names
 del g
 print "+ Classed created."
 
+
 print "+ Storing stems..."
 fp = open(stems_file_path, "w")
 for c in classes:
+	if len(c) == 1:
+		fp.write("%s\t%s\n" % (c[0], c[0]))
+		continue
+
 	for word in c[1:]:
 		fp.write("%s\t%s\n" % (word, c[0]))
 
