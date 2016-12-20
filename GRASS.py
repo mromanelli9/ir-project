@@ -60,7 +60,7 @@ def help_message():
 # Default stemmer parameters
 l = 5
 l_forced = False
-alpha = 4
+alpha = 6
 delta = 0.8
 
 # Output file path
@@ -83,11 +83,13 @@ for opt, arg in opts:
 		lexicon_path = arg.strip()
 	if opt == '--alpha':                
 		alpha = int(arg) 
+		print "+ Value of alpha overriden: %d." % alpha
 	elif opt == '--l':                
 		l = int(arg) 
 		l_forced = True
 	elif opt == '--delta':                
-		alpha = float(arg)
+		delta = float(arg)
+		print "+ Value of delta overriden: %d." % delta
 
 if lexicon_path is None:
 	print "- Missing lexicon file."                        
@@ -110,13 +112,14 @@ print "+ Lexicon parsed."
 # updating l value if present
 if not l_forced:
 	l = sum(lexicon_lengths)/len(lexicon)
+	print "+ Value of l is now equal to the average word length (%d)." % l
 
-classes = [[]]
-# sort lexicon
-lexicon.sort()
+lexicon.sort() 			# sort lexicon
 
 
 print "+ Clustering words..."
+classes = [[]]
+
 # clustering words into classes
 i = 0
 j = 0
@@ -168,6 +171,8 @@ for sx, (words, f) in frequencies.items():
 if len(g.es) < 10:
 	print "- The number of edges is too low (%d). Quitting." % len(g.es)
 	quit()
+
+print "\t+ G=(V,E) with |V|=%d and |E|=%d." % (len(g.vs), len(g.es))
 
 ###################### Algoritmo 2 ############################
 print "+ Identifyng classes..."
