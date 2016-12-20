@@ -98,21 +98,10 @@ print "+ Parsing lexicon..."
 lexicon = []
 lexicon_lengths = []
 fp = open(lexicon_path, "r")
-i = 0
 for w in fp:
-	# blocco per debugging
-	if i < 500:
-		i += 1
-		continue
 	word = w.strip()
 	lexicon.append(word)
 	lexicon_lengths.append(len(word))
-
-	# blocco per debugging
-	if i > 1000:
-		break
-
-	i += 1
 
 fp.close()
 print "+ Lexicon parsed."
