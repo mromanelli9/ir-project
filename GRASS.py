@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
 #
+#  GRAS Stemmer
 #  Authors:   Federico Ghirardelli, Marco Romanelli
 #  A.A.:      2016-2017
 #
 
 import getopt, sys
+from os import path
+from getopt import GetoptError, getopt
 from collections import Counter
 from igraph import *
 from operator import itemgetter
@@ -44,12 +48,6 @@ def lcs(x, y):
 def cohesion(p_neighbors, v_neighbors):
 	return (1 + len(set(p_neighbors).intersection(v_neighbors))) / len(v_neighbors)
 
-def printClass(classes):
-	i=0
-	for item in classes:
-	    print "class %i: %s" % (i, item)
-	    i +=1
-
 
 ##############################################################
 ###############  			 MAIN   		  ################
@@ -57,35 +55,59 @@ def printClass(classes):
 
 # Default stemmer parameters
 l = 4
+l_forced = False
 alpha = 1 			# debugging iniziale
 delta = 0.8
 
 # Overriding value if passed as argument in command line
-try:                                
-	opts, args = getopt.getopt(sys.argv[1:], "", ["alpha=", "gamma=", "l="])
-except getopt.GetoptError:          
+lexicon_path = None
+try:
+	opts, args = getopt(sys.argv[1:], "l:", ["alpha=", "delta=", "l="])
+except GetoptError:          
 	print "- Unknown command."                        
 	quit()    
-
-for opt, arg in opts:                
+for opt, arg in opts:     
+	if opt == "-l":
+		if not ((type(arg) is str) and path.isfile(arg)):
+			print "- Bad lexicon file."                        
+			quit()
+		lexicon_path = arg.strip()
 	if opt == '--alpha':                
 		alpha = int(arg) 
 	elif opt == '--l':                
 		l = int(arg) 
-	elif opt == '--gamma':                
+		l_forced = True
+	elif opt == '--delta':                
 		alpha = float(arg)
 
-lexicon = ["leg", "legs", "legalize", "execute", "executive", "legal", "legging", "legroom", "legitimization", "legislations", "legendary", "executioner", "executable", "executed", "farmer", "farmhouse", "farmworks", "farming", "farms", "asian", "asiatic", "asianization", "india", "indian", "indianapolis", "indiana", "pieceworker", "piercings", "piercers", "pied", "indians", "indianina" , "legionnaire", "legitimized", "legitimator", "legalizer", "legalizing", "legwarmer", "leghorns" , "legally", "farmse", "barse" , "bars" ,"aaaa" , "aaaaa"]
+if lexicon_path is None:
+	print "- Missing lexicon file."                        
+	quit()
 
-#lexicon = ["legalize", "execute", "executive", "legal", "executioner", "executable", "executed"]
+print "+ Parsing lexicon..."
+
+lexicon = []
+lexicon_lengths = []
+fp = open(lexicon_path, "r")
+for w in fp:
+	word = w.strip()
+	lexicon.append(w)
+
+	lexicon_lengths.append(len(word))
+fp.close()
+print "+ Lexicon parsed."
+
+
+# updating l value if present
+if not l_forced:
+	l = sum(lexicon_lengths)/len(lexicon)
+
 classes = [[]]
-
-
-#print lexicon
+# sort lexicon
 lexicon.sort()
-print "----------------------------------------------"
-#print lexicon
 
+print "+ Creating classes of words..."
+# clustering words into classes
 i = 0
 j = 0
 while (i < len(lexicon)):
@@ -98,9 +120,9 @@ while (i < len(lexicon)):
 	i += 1
 
 del classes[j]	# empty class
+print "+ Classes created..."
 
-printClass(classes)
-
+print "+ Computing alpha-frequencies..."
 frequencies = {}
 for m in range(0, len(classes), 1):
 	for j in range(0, len(classes[m]), 1):
@@ -113,7 +135,9 @@ for m in range(0, len(classes), 1):
 			else:
 				(ws, freq) = frequencies[pair]
 				frequencies.update({pair: (ws, freq + 1)})
+print "+ Done."
 
+print "+ Generating graph..."
 # "Clearing" old classes
 classes = []
 
@@ -129,6 +153,7 @@ for sx, (words, f) in frequencies.items():
 		g.add_edge(w1, w2, weight=f)		 # aggiungo l'arco che unisce le due parole
 											# con il peso dell'alpha-frequency
 
+print "+ Identifyng classes..."
 ###################### Algoritmo 2 ############################
 while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto)
 	S = []
@@ -156,12 +181,16 @@ while g.vcount() != 0:  #while pricipale (finche' il sottografo non e' vuoto)
 
 	# output class S
 	classes.append([g.vs[v]["name"] for v in S])
+	print "\t+ Class created."
 
 	# Rimuovo da G i veritici in S e gli archi incidenti
 	g.delete_vertices(S)
 
-print
-for c in classes:
-	print "Stem: %s, parole: %s" % (c[0], c[1:]) 
+# removing names
+del g
+print "+ Classed created."
 
+print "+ Storing stemmers file..."
+
+print "+ Done. Bye."
 quit()
