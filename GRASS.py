@@ -87,6 +87,7 @@ for opt, arg in opts:
 	elif opt == '--l':                
 		l = int(arg) 
 		l_forced = True
+		print "+ Value of l overriden: %.1f." % delta
 	elif opt == '--delta':                
 		delta = float(arg)
 		print "+ Value of delta overriden: %.1f." % delta
@@ -117,13 +118,13 @@ if not l_forced:
 lexicon.sort() 			# sort lexicon
 
 
-print "+ Clustering words..."
+print "+ Clustering words in classes..."
 classes = [[]]
 
 # clustering words into classes
 i = 0
 j = 0
-while (i < len(lexicon)) and (i<1000):
+while (i < len(lexicon)):
 	w1 = lexicon[i]
 	w2 = lexicon[i+1] if (i < len(lexicon)-1) else ""
 	classes[j].append(w1)
@@ -133,11 +134,15 @@ while (i < len(lexicon)) and (i<1000):
 	i += 1
 
 del classes[j]	# empty class
-print "+ Done."
+print "+ Done (%d word classes created)." % len(classes)
 
 print "+ Computing alpha-frequencies..."
 frequencies = {}
-for m in range(0, len(classes), 1):
+for m in range(0, len(classes)):
+	print "\t+ For class #%d" % m
+	sys.stdout.write("\033[F")
+	sys.stdout.flush()
+
 	for j in range(0, len(classes[m])):
 		for k in range(j+1, len(classes[m])):
 			w1 = classes[m][j]
@@ -148,7 +153,13 @@ for m in range(0, len(classes), 1):
 			else:
 				(ws, freq) = frequencies[pair]
 				frequencies.update({pair: (ws, freq + 1)})
+
+sys.stdout.write("\r\033[K")
+print sys.getsizeof(frequencies)
 print "+ Done."
+
+quit()
+
 
 
 print "+ Generating graph..."
@@ -213,6 +224,7 @@ while (g.vcount() != 0) and not early_quitting:  #while pricipale (finche' il so
 	# Rimuovo da G i veritici in S e gli archi incidenti
 	g.delete_vertices(S)
 
+	#print g
 	# loop breaking
 	if len(g.es) == 0:
 		early_quitting = True
