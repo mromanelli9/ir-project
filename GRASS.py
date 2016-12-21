@@ -35,15 +35,8 @@ def lcp(x, y):
 	return i
 
 def lcs(x, y):
-	n_suffix = lcp(x, y)
-
-	copyX = x[n_suffix:]
-	copyY = y[n_suffix:]
-
-	if(copyX>copyY):
-		return copyX, copyY
-	else:
-		return copyY, copyX
+	n = lcp(x, y)
+	return (x[n:], y[n:])
 
 def cohesion(p_neighbors, v_neighbors):
 	return (1 + len(set(p_neighbors).intersection(v_neighbors))) / len(v_neighbors)
@@ -63,6 +56,10 @@ l_forced = False
 alpha = 6
 delta = 0.8
 
+# Other variables
+cutoff = None
+
+
 # Output file path
 stems_file_path = "stems.txt"
 
@@ -72,7 +69,7 @@ if len(sys.argv) < 2:
 # Overriding value if passed as argument in command line
 lexicon_path = None
 try:
-	opts, args = getopt(sys.argv[1:], "l:", ["alpha=", "delta=", "l="])
+	opts, args = getopt(sys.argv[1:], "l:", ["alpha=", "delta=", "l=", "cut-off="])
 except GetoptError:          
 	    help_message()
 for opt, arg in opts:     
@@ -87,10 +84,13 @@ for opt, arg in opts:
 	elif opt == '--l':                
 		l = int(arg) 
 		l_forced = True
-		print "+ Value of l overriden: %.1f." % delta
+		print "+ Value of l overriden: %d." % l
 	elif opt == '--delta':                
 		delta = float(arg)
 		print "+ Value of delta overriden: %.1f." % delta
+	elif opt == '--cut-off':                
+		cutoff = int(arg)
+		print "+ Cut-off value set: %d." % cutoff
 
 if lexicon_path is None:
 	print "- Missing lexicon file."                        
@@ -117,6 +117,9 @@ if not l_forced:
 
 lexicon.sort() 			# sort lexicon
 
+# limit cutoff to lexicon's length
+if cutoff and cutoff > len(lexicon):
+	cutoff = len(lexicon)
 
 print "+ Clustering words in classes..."
 classes = [[]]
@@ -124,7 +127,9 @@ classes = [[]]
 # clustering words into classes
 i = 0
 j = 0
-while (i < len(lexicon)):
+if not cutoff:
+	cutoff = len(lexicon)
+while i < cutoff:
 	w1 = lexicon[i]
 	w2 = lexicon[i+1] if (i < len(lexicon)-1) else ""
 	classes[j].append(w1)
@@ -136,56 +141,79 @@ while (i < len(lexicon)):
 del classes[j]	# empty class
 print "+ Done (%d word classes created)." % len(classes)
 
+
+###################### Algorithm #1 ############################
 print "+ Computing alpha-frequencies..."
-frequencies = {}
+frequencies = Counter({})
+suffix_array = []
+i = 0
 for m in range(0, len(classes)):
-	print "\t+ For class #%d" % m
+	print "\t+ Working on class #%d" % m
 	sys.stdout.write("\033[F")
 	sys.stdout.flush()
 
-	for j in range(0, len(classes[m])):
-		for k in range(j+1, len(classes[m])):
-			w1 = classes[m][j]
-			w2 = classes[m][k]
-			pair = lcs(w1, w2)
-			if pair not in frequencies.keys(): 
-				frequencies.update({pair: ((w1, w2), 1)})
-			else:
-				(ws, freq) = frequencies[pair]
-				frequencies.update({pair: (ws, freq + 1)})
+	# computing pairs of suffixes (current class)
+	suffix_array = [lcs(classes[m][j], classes[m][k]) for j in range(0, len(classes[m])) for k in range(j+1, len(classes[m]))]
 
-sys.stdout.write("\r\033[K")
-print sys.getsizeof(frequencies)
-print "+ Done."
+	# combining two counters, local and global (so far)
+	frequencies = frequencies + Counter(suffix_array)		
 
-quit()
+print "\t+ Working on class #%d" % len(classes)
 
+# Removing suffixes with frequency less than alpha
+print "\t+ Doing some improvement..."
+temp = frequencies
+frequencies = {k:v for k,v in temp.iteritems() if v >= alpha}
 
+print "+ Done: %d alpha-suffixes found." % len(frequencies)
 
-print "+ Generating graph..."
+# Removing names (clear memory)
+del temp
+del suffix_array
+
+print "+ Generating graph G=(V,E) ..."
 # "Clearing" old classes
-classes = []
 
-g = Graph(directed=False)	
-for i in range(0, len(lexicon)):  # creo un nodo per ogni parola
+g = Graph(directed=False)
+
+# creating a vertex foreach word in the lexicon
+for i in range(0, len(lexicon)):  
 	g.add_vertex(lexicon[i])
 
-# scorro ttute le coppie di suffissi
-for sx, (words, f) in frequencies.items():
-	# se la frequenza della coppia e' almeno alpha
-	if f >= alpha:
-		w1, w2 = words
-		g.add_edge(w1, w2, weight=f)		 # aggiungo l'arco che unisce le due parole
-											# con il peso dell'alpha-frequency
+print "\t+ |V|=%d" % len(g.vs)
+
+# creating an edge foreach alpha-suffix:
+# foreach pair of words in the lexicon...
+# for i in range(0, len(lexicon)):
+# 	for j in range(i+1, len(lexicon)):  
+# 			suffix = lcs(lexicon[i], lexicon[j])
+# 			print i, j
+# 			if suffix in frequencies:
+# 				w1 = lexicon[i]
+# 				g.add_edge(lexicon[i], lexicon[j], weight=frequencies[suffix])
+
+for m in range(0, len(classes)):
+	alpha_suffix_array = [(classes[m][j], classes[m][k], lcs(classes[m][j], classes[m][k])) for j in range(0, len(classes[m]))
+														for k in range(j+1, len(classes[m]))
+							if lcs(classes[m][j], classes[m][k]) in frequencies]
+
+	for w1, w2, suffix in alpha_suffix_array:
+		g.add_edge(lexicon[i], lexicon[j], weight=frequencies[suffix])
+
 
 # if something weird happened
 if len(g.es) == 0:
-	print "- The number of edges is equal to zero. Something wrong?"
+	print "\t- The number of edges is equal to zero. Something wrong?"
 	quit()
+else:
+	print "\t+ |E|=%d" % len(g.es)
 
-print "\t+ G=(V,E) with |V|=%d and |E|=%d." % (len(g.vs), len(g.es))
+# Removing names (clear memory)
+del alpha_suffix_array
+del classes
+classes = []
 
-###################### Algoritmo 2 ############################
+###################### Algorithm #2 ############################
 print "+ Identifyng classes..."
 jj = 0
 early_quitting = False
@@ -229,23 +257,18 @@ while (g.vcount() != 0) and not early_quitting:  #while pricipale (finche' il so
 	if len(g.es) == 0:
 		early_quitting = True
 
-sys.stdout.write("\r\033[K")				# esoteric stuff to clear terminal line
+print "\t+ %d class created." % jj
 
 # when quitting with early_quitting=True there're still vertex in the graph to be added in some class(es)
 # I assume that there'd go in singleton sets ---> ???
-for v in g.vs:
-	classes.append([v["name"]])
+if early_quitting:
+	print "\t+ Adding additional %d singletons." % len(g.vs)
+	for v in g.vs:
+		classes.append([v["name"]])
 
 # removing names
 del g
 print "+ Classed created."
-
-print
-print
-print classes[:4]
-print
-print
-
 
 print "+ Storing stems..."
 fp = open(stems_file_path, "w")
