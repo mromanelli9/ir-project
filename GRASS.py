@@ -177,7 +177,7 @@ print "+ Generating graph G=(V,E) ..."
 g = Graph(directed=False)
 
 # creating a vertex foreach word in the lexicon
-for i in range(0, len(lexicon)):  
+for i in range(0, cutoff):  
 	g.add_vertex(lexicon[i])
 
 print "\t+ |V|=%d" % len(g.vs)
@@ -192,14 +192,22 @@ print "\t+ |V|=%d" % len(g.vs)
 # 				w1 = lexicon[i]
 # 				g.add_edge(lexicon[i], lexicon[j], weight=frequencies[suffix])
 
+c_edge = 0
 for m in range(0, len(classes)):
 	alpha_suffix_array = [(classes[m][j], classes[m][k], lcs(classes[m][j], classes[m][k])) for j in range(0, len(classes[m]))
 														for k in range(j+1, len(classes[m]))
 							if lcs(classes[m][j], classes[m][k]) in frequencies]
 
 	for w1, w2, suffix in alpha_suffix_array:
-		g.add_edge(lexicon[i], lexicon[j], weight=frequencies[suffix])
+		print "\t+ Adding edge #%d" % c_edge
+		sys.stdout.write("\033[F")
+		sys.stdout.flush()
+		c_edge += 1
 
+
+		g.add_edge(w1, w2, weight=frequencies[suffix])
+		
+sys.stdout.write("\r\033[K")
 
 # if something weird happened
 if len(g.es) == 0:
