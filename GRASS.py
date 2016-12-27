@@ -10,6 +10,7 @@ from os import path
 from getopt import GetoptError, getopt
 from collections import Counter
 from igraph import *
+import igraph.vendor.texttable				# required for py2exe
 from operator import itemgetter
 
 ##############################################################
@@ -73,7 +74,7 @@ def lexicon_parser(path, readnumbers=True):
 
 def help_message():
 	print "Usage: python GRASS.py -l <lexicon-path> [OPTIONS]\n"                 
-	quit()
+	sys.exit()
 
 
 ##############################################################
@@ -107,7 +108,7 @@ for opt, arg in opts:
 	if opt == "-l":
 		if not ((type(arg) is str) and path.isfile(arg)):
 			print "- Bad lexicon file."                        
-			quit()
+			sys.exit()
 		lexicon_path = arg.strip()
 	if opt == '--alpha':                
 		alpha = int(arg) 
@@ -128,13 +129,13 @@ for opt, arg in opts:
 
 if lexicon_path is None:
 	print "- Missing lexicon file."                        
-	quit()
+	sys.exit()
 
 print "+ Parsing lexicon..."
 lexicon, average_length = lexicon_parser(lexicon_path, readnumbers)
 if len(lexicon) == 0:
 	print "- Error while parsing the lexicon."
-	quit()
+	sys.exit()
 
 print "+ Lexicon parsed (%d words)." % len(lexicon)
 
@@ -230,7 +231,7 @@ for m in range(0, len(classes)):
 # if something weird happened
 if len(g.es) == 0:
 	print "\t- The number of edges is equal to zero. Something wrong?"
-	quit()
+	sys.exit()
 else:
 	print "\t+ |E|=%d" % g.ecount()
 
@@ -315,4 +316,4 @@ for word, stem in output:
 fp.close()
 
 print "+ Done. Bye."
-quit()
+sys.exit()
