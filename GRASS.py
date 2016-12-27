@@ -177,9 +177,9 @@ frequencies_temp = Counter({})
 suffix_array = []
 i = 0
 for m in range(0, len(classes)):
-	print "\t+ Working on class #%d" % m
-	sys.stdout.write("\033[F")
-	sys.stdout.flush()
+	# print "\t+ Working on class #%d" % m
+	# sys.stdout.write("\033[F")
+	# sys.stdout.flush()
 
 	# computing pairs of suffixes (current class)
 	suffix_array = [lcs(classes[m][j], classes[m][k]) for j in range(0, len(classes[m]))
@@ -188,7 +188,7 @@ for m in range(0, len(classes)):
 	# combining two counters, local and global (so far)
 	frequencies_temp = frequencies_temp + Counter(suffix_array)		
 
-print "\t+ Working on class #%d" % len(classes)
+#print "\t+ Working on class #%d" % len(classes)
 
 # Removing suffixes with frequency less than alpha
 print "\t+ Doing some improvement..."
@@ -220,12 +220,12 @@ for m in range(0, len(classes)):
 	for w1, w2, suffix in alpha_suffix_array:
 		g.add_edge(w1, w2, weight=frequencies[suffix])
 
-		print "\t+ Adding edge #%d" % c_edge
-		sys.stdout.write("\033[F")
-		sys.stdout.flush()
-		c_edge += 1
+		# print "\t+ Adding edge #%d" % c_edge
+		# sys.stdout.write("\033[F")
+		# sys.stdout.flush()
+		# c_edge += 1
 		
-sys.stdout.write("\r\033[K")
+#sys.stdout.write("\r\033[K")
 
 # if something weird happened
 if len(g.es) == 0:
@@ -270,10 +270,10 @@ while (g.vcount() != 0) and not early_quitting:  #while pricipale (finche' il so
 	# output class S
 	classes.append([g.vs[v]["name"] for v in S])
 	
-	print "\t+ %d class created." % jj
-	sys.stdout.write("\033[F")							# printing on the same line
-	sys.stdout.flush()
-	jj += 1
+	# print "\t+ %d class created." % jj
+	# sys.stdout.write("\033[F")							# printing on the same line
+	# sys.stdout.flush()
+	# jj += 1
 
 	# Rimuovo da G i veritici in S e gli archi incidenti
 	g.delete_vertices(S)
@@ -283,7 +283,7 @@ while (g.vcount() != 0) and not early_quitting:  #while pricipale (finche' il so
 	if len(g.es) == 0:
 		early_quitting = True
 
-print "\t+ %d class created." % jj
+#print "\t+ %d class created." % jj
 
 # when quitting with early_quitting=True there're still vertex in the graph to be added in some class(es)
 # I assume that there'd go in singleton sets ---> ???
