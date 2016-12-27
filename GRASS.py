@@ -41,6 +41,36 @@ def lcs(x, y):
 def cohesion(p_neighbors, v_neighbors):
 	return (1 + len(set(p_neighbors).intersection(v_neighbors))) / len(v_neighbors)
 
+def lexicon_parser(path, readnumbers=True):
+	# assuming path is a regular file path
+	words_lengths = []
+	average_length = 0
+	lexicon_n = 0
+	lexicon = []
+
+	fp = open(lexicon_path, "r")
+	signature = [fp.readline() for i in range(0,2)]
+
+	# verifying terrier lexicon's "signature" 
+	if not ((signature[0][:23] == "Setting TERRIER_HOME to") and (signature[1][:20] == "Setting JAVA_HOME to")):
+		print "- Error while parsing the lexicon."
+		return [], 0
+
+	for w in fp:
+		word = w[:w.index(',')].strip()
+		if word[0].isdigit() and not readnumbers:
+			continue
+		lexicon.append(word)
+		words_lengths.append(len(word))
+
+	fp.close()
+
+	lexicon_n = len(lexicon)
+	average_length = sum(words_lengths) / len(lexicon)
+
+	return lexicon, average_length
+
+
 def help_message():
 	print "Usage: python GRASS.py -l <lexicon-path> [OPTIONS]\n"                 
 	quit()
@@ -55,6 +85,7 @@ l = 5
 l_forced = False
 alpha = 6
 delta = 0.8
+readnumbers = True
 
 # Other variables
 cutoff = None
@@ -69,7 +100,7 @@ if len(sys.argv) < 2:
 # Overriding value if passed as argument in command line
 lexicon_path = None
 try:
-	opts, args = getopt(sys.argv[1:], "l:", ["alpha=", "delta=", "l=", "cut-off="])
+	opts, args = getopt(sys.argv[1:], "l:", ["alpha=", "delta=", "l=", "cut-off=", "no-numbers"])
 except GetoptError:          
 	    help_message()
 for opt, arg in opts:     
@@ -80,40 +111,38 @@ for opt, arg in opts:
 		lexicon_path = arg.strip()
 	if opt == '--alpha':                
 		alpha = int(arg) 
-		print "+ Value of alpha overriden: %d." % alpha
+		print "+ [OPTION] Value of alpha overriden: %d." % alpha
 	elif opt == '--l':                
 		l = int(arg) 
 		l_forced = True
-		print "+ Value of l overriden: %d." % l
+		print "+ [OPTION] Value of l overriden: %d." % l
 	elif opt == '--delta':                
 		delta = float(arg)
-		print "+ Value of delta overriden: %.1f." % delta
+		print "+ [OPTION] Value of delta overriden: %.1f." % delta
 	elif opt == '--cut-off':                
 		cutoff = int(arg)
-		print "+ Cut-off value set: %d." % cutoff
+		print "+ [OPTION] Cut-off value set: %d." % cutoff
+	elif opt == '--no-numbers':                
+		readnumbers = False
+		print "+ [OPTION] Do not parse numbers." 
 
 if lexicon_path is None:
 	print "- Missing lexicon file."                        
 	quit()
 
 print "+ Parsing lexicon..."
+lexicon, average_length = lexicon_parser(lexicon_path, readnumbers)
+if len(lexicon) == 0:
+	print "- Error while parsing the lexicon."
+	quit()
 
-lexicon = []
-lexicon_lengths = []
-fp = open(lexicon_path, "r")
-for w in fp:
-	word = w.strip()
-	lexicon.append(word)
-	lexicon_lengths.append(len(word))
-
-fp.close()
 print "+ Lexicon parsed."
-
 
 # updating l value if present
 if not l_forced:
-	l = sum(lexicon_lengths)/len(lexicon)
-	print "+ Value of l is now equal to the average word length (%d)." % l
+	l = average_length
+	print "+ [OPTION] Value of l is now equal to the average word length (%d)." % l
+del average_length
 
 lexicon.sort() 			# sort lexicon
 
