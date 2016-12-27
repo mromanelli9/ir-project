@@ -81,7 +81,7 @@ def help_message():
 ##############################################################
 
 # Default stemmer parameters
-l = 5
+l = None
 l_forced = False
 alpha = 6
 delta = 0.8
@@ -173,7 +173,7 @@ print "+ Done (%d word classes created)." % len(classes)
 
 ###################### Algorithm #1 ############################
 print "+ Computing alpha-frequencies..."
-frequencies = Counter({})
+frequencies_temp = Counter({})
 suffix_array = []
 i = 0
 for m in range(0, len(classes)):
@@ -182,44 +182,34 @@ for m in range(0, len(classes)):
 	sys.stdout.flush()
 
 	# computing pairs of suffixes (current class)
-	suffix_array = [lcs(classes[m][j], classes[m][k]) for j in range(0, len(classes[m])) for k in range(j+1, len(classes[m]))]
+	suffix_array = [lcs(classes[m][j], classes[m][k]) for j in range(0, len(classes[m]))
+													for k in range(j+1, len(classes[m]))]
 
 	# combining two counters, local and global (so far)
-	frequencies = frequencies + Counter(suffix_array)		
+	frequencies_temp = frequencies_temp + Counter(suffix_array)		
 
 print "\t+ Working on class #%d" % len(classes)
 
 # Removing suffixes with frequency less than alpha
 print "\t+ Doing some improvement..."
-temp = frequencies
-frequencies = {k:v for k,v in temp.iteritems() if v >= alpha}
+
+frequencies = {k:v for k,v in frequencies_temp.iteritems() if v >= alpha}
 
 print "+ Done: %d alpha-suffixes found." % len(frequencies)
 
 # Removing names (clear memory)
-del temp
+del frequencies_temp
 del suffix_array
 
-print "+ Generating graph G=(V,E) ..."
-# "Clearing" old classes
 
+print "+ Generating graph G=(V,E) ..."
 g = Graph(directed=False)
 
 # creating a vertex foreach word in the lexicon
 for i in range(0, cutoff):  
 	g.add_vertex(lexicon[i])
 
-print "\t+ |V|=%d" % len(g.vs)
-
-# creating an edge foreach alpha-suffix:
-# foreach pair of words in the lexicon...
-# for i in range(0, len(lexicon)):
-# 	for j in range(i+1, len(lexicon)):  
-# 			suffix = lcs(lexicon[i], lexicon[j])
-# 			print i, j
-# 			if suffix in frequencies:
-# 				w1 = lexicon[i]
-# 				g.add_edge(lexicon[i], lexicon[j], weight=frequencies[suffix])
+print "\t+ |V|=%d" % g.vcount()
 
 c_edge = 0
 for m in range(0, len(classes)):
@@ -228,13 +218,12 @@ for m in range(0, len(classes)):
 							if lcs(classes[m][j], classes[m][k]) in frequencies]
 
 	for w1, w2, suffix in alpha_suffix_array:
+		g.add_edge(w1, w2, weight=frequencies[suffix])
+
 		print "\t+ Adding edge #%d" % c_edge
 		sys.stdout.write("\033[F")
 		sys.stdout.flush()
 		c_edge += 1
-
-
-		g.add_edge(w1, w2, weight=frequencies[suffix])
 		
 sys.stdout.write("\r\033[K")
 
@@ -243,7 +232,7 @@ if len(g.es) == 0:
 	print "\t- The number of edges is equal to zero. Something wrong?"
 	quit()
 else:
-	print "\t+ |E|=%d" % len(g.es)
+	print "\t+ |E|=%d" % g.ecount()
 
 # Removing names (clear memory)
 del alpha_suffix_array
