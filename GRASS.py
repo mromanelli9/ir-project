@@ -60,7 +60,7 @@ def lexicon_parser(path, readnumbers=True):
 		word = w[:w.index(',')].strip()
 		if word[0].isdigit() and not readnumbers:
 			continue
-		lexicon.append(word)
+		lexicon.append(word.decode("utf-8"))			# potrebbe portare a errori?
 		words_lengths.append(len(word))
 
 	fp.close()
@@ -136,7 +136,7 @@ if len(lexicon) == 0:
 	print "- Error while parsing the lexicon."
 	quit()
 
-print "+ Lexicon parsed."
+print "+ Lexicon parsed (%d words)." % len(lexicon)
 
 # updating l value if present
 if not l_forced:
@@ -308,14 +308,20 @@ del g
 print "+ Classed created."
 
 print "+ Storing stems..."
-fp = open(stems_file_path, "w")
+output = []
 for c in classes:
 	if len(c) == 1:
-		fp.write("%s\t%s\n" % (c[0], c[0]))
-		continue
+		output.append((c[0], c[0]))
+	else:
+		for word in c[1:]:
+			output.append((word, c[0]))
 
-	for word in c[1:]:
-		fp.write("%s\t%s\n" % (word, c[0]))
+output.sort(key=operator.itemgetter(0))		# ordino le parole del dizionario (come in origine)
+
+fp = open(stems_file_path, "w")
+for word, stem in output:
+	s = "%s\t%s\n" % (word, stem)
+	fp.write(s.encode("utf-8"))
 
 fp.close()
 
