@@ -12,7 +12,7 @@ from collections import Counter
 from igraph import *
 import igraph.vendor.texttable				# required for py2exe
 from operator import itemgetter
-from itertools import product, combinations, izip
+from itertools import combinations
 
 ##############################################################
 ###############   FUNCTIONS AND SUBROUTINES   ################
@@ -220,12 +220,21 @@ print "\t+ |V|=%d" % g.vcount()
 
 c_edge = 0
 for m in range(0, len(classes)):
-	alpha_suffix_array = [(classes[m][j], classes[m][k], lcs(classes[m][j], classes[m][k])) for j in range(0, len(classes[m]))
-														for k in range(j+1, len(classes[m]))
-							if lcs(classes[m][j], classes[m][k]) in frequencies]
+	alpha_suffix_array = []
 
-	for w1, w2, suffix in alpha_suffix_array:
-		g.add_edge(w1, w2, weight=frequencies[suffix])
+	if len(classes[m]) == 1:
+		continue
+
+	# computing pairs of suffixes (current class)
+	for w1, w2 in combinations(classes[m], 2):
+		suffix = lcs(w1, w2)
+		if suffix in frequencies:
+			g.add_edge(w1, w2, weight=frequencies[suffix])
+
+	# alpha_suffix_array = [(classes[m][j], classes[m][k], lcs(classes[m][j], classes[m][k])) for j in range(0, len(classes[m]))
+	# 													for k in range(j+1, len(classes[m]))
+	# 						if lcs(classes[m][j], classes[m][k]) in frequencies]
+		
 
 		# print "\t+ Adding edge #%d" % c_edge
 		# sys.stdout.write("\033[F")
