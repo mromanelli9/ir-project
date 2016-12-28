@@ -192,6 +192,9 @@ for m in range(0, len(classes)):
 	for w1, w2 in combinations(classes[m], 2):
 		append(suffix_array, lcs(w1, w2))
 	
+	#suffix_array = list(starmap(lcs, combinations(classes[m], 2)))
+
+
 	# combining two counters, local and global (so far)
 	frequencies_temp = frequencies_temp + Counter(suffix_array)		
 
@@ -220,21 +223,15 @@ print "\t+ |V|=%d" % g.vcount()
 
 c_edge = 0
 for m in range(0, len(classes)):
-	alpha_suffix_array = []
 
 	if len(classes[m]) == 1:
 		continue
 
 	# computing pairs of suffixes (current class)
-	for w1, w2 in combinations(classes[m], 2):
-		suffix = lcs(w1, w2)
-		if suffix in frequencies:
-			g.add_edge(w1, w2, weight=frequencies[suffix])
+	alpha_suffix_array = [(w1, w2) for w1, w2 in combinations(classes[m], 2) if lcs(w1, w2) in frequencies]
 
-	# alpha_suffix_array = [(classes[m][j], classes[m][k], lcs(classes[m][j], classes[m][k])) for j in range(0, len(classes[m]))
-	# 													for k in range(j+1, len(classes[m]))
-	# 						if lcs(classes[m][j], classes[m][k]) in frequencies]
-		
+	for w1, w2 in alpha_suffix_array:
+		g.add_edge(w1, w2, weight=frequencies[lcs(w1, w2)])
 
 		# print "\t+ Adding edge #%d" % c_edge
 		# sys.stdout.write("\033[F")
@@ -305,14 +302,14 @@ while (g.vcount() != 0) and not early_quitting:  #while pricipale (finche' il so
 # I assume that there'd go in singleton sets ---> ???
 if early_quitting:
 	print "\t+ Adding additional %d singletons." % len(g.vs)
-	for v in g.vs:
-		classes.append([v["name"]])
+
+	classes += [v["name"] for v in g.vs]
 
 # removing names
 del g
 print "+ Classed created."
 
-print "+ Storing stems..."
+print "+ Storing items..."
 output = []
 for c in classes:
 	if len(c) == 1:
