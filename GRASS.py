@@ -110,17 +110,13 @@ for opt, arg in opts:
 		lexicon_path = arg.strip()
 	if opt == '--alpha':                
 		alpha = int(arg) 
-		print "+ [OPTION] Value of alpha overriden: %d." % alpha
 	elif opt == '--l':                
 		l = int(arg) 
 		l_forced = True
-		print "+ [OPTION] Value of l overriden: %d." % l
 	elif opt == '--delta':                
 		delta = float(arg)
-		print "+ [OPTION] Value of delta overriden: %.1f." % delta
 	elif opt == '--cut-off':                
 		cutoff = int(arg)
-		print "+ [OPTION] Cut-off value set: %d." % cutoff
 	elif opt == '--no-numbers':                
 		readnumbers = False
 		print "+ [OPTION] Do not parse numbers." 
@@ -131,24 +127,29 @@ if lexicon_path is None:
 
 print "+ Parsing lexicon..."
 lexicon, average_length = lexicon_parser(lexicon_path, readnumbers)
+
+# limit cutoff to lexicon's length
+if cutoff and cutoff > len(lexicon):
+	cutoff = len(lexicon)
+
 if len(lexicon) == 0:
 	print "- Error while parsing the lexicon."
 	sys.exit()
+
+lexicon.sort() 			# sort lexicon
 
 print "+ Lexicon parsed (%d words)." % len(lexicon)
 
 # updating l value if present
 if not l_forced:
 	l = average_length
-	print "+ [OPTION] Value of l is now equal to the average word length (%d)." % l
 del average_length
 
-lexicon.sort() 			# sort lexicon
 
-# limit cutoff to lexicon's length
-if cutoff and cutoff > len(lexicon):
-	cutoff = len(lexicon)
-
+print "+ Parameters:"
+print "\t+ l = %d" % l
+print "\t+ alpha = %d" % alpha
+print "\t+ delta = %.1f" % delta
 
 print "+ Clustering words in classes..."
 classes = [[]]
