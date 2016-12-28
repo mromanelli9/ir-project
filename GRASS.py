@@ -14,6 +14,9 @@ import igraph.vendor.texttable				# required for py2exe
 from operator import itemgetter
 from itertools import combinations
 
+# Set the interpreter's 'check interval', how often to perform periodic checks
+sys.setcheckinterval = 1000
+
 ##############################################################
 ###############   FUNCTIONS AND SUBROUTINES   ################
 ##############################################################
