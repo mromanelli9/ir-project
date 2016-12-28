@@ -12,7 +12,7 @@ from collections import Counter
 from igraph import *
 import igraph.vendor.texttable				# required for py2exe
 from operator import itemgetter
-from itertools import combinations
+from itertools import combinations, takewhile
 
 # Set the interpreter's 'check interval', how often to perform periodic checks
 sys.setcheckinterval = 1000
@@ -24,24 +24,19 @@ sys.setcheckinterval = 1000
 # Compute Longest Common Prefix
 def lcp(x, y):
 	# len(x) must be shorter than len(y)
-
 	if not x or not y:
 		return 0
 
-	if len(x) > len(y):
-		t = x
-		x = y
-		y = t
-
 	i = 0
-	while ((i < len(x)) and (x[i] == y[i])):
-		i += 1
+	while ((i < len(x)) and (x[i] == y[i])): i += 1
 
 	return i
 
 def lcs(x, y):
-	n = lcp(x, y)
-	return (x[n:], y[n:])
+	i = 0
+	while ((i < len(x)) and (x[i] == y[i])): i += 1
+
+	return (x[i:], y[i:])
 
 def cohesion(p_neighbors, v_neighbors):
 	return (1 + len(set(p_neighbors).intersection(v_neighbors))) / len(v_neighbors)
@@ -153,6 +148,7 @@ lexicon.sort() 			# sort lexicon
 # limit cutoff to lexicon's length
 if cutoff and cutoff > len(lexicon):
 	cutoff = len(lexicon)
+
 
 print "+ Clustering words in classes..."
 classes = [[]]
