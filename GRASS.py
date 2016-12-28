@@ -92,7 +92,6 @@ readnumbers = True
 # Other variables
 cutoff = None
 
-
 # Output file path
 stems_file_path = "stems.txt"
 
@@ -179,10 +178,6 @@ frequencies_temp = Counter({})
 append = list.append				# speed-up
 i = 0
 for m in range(0, len(classes)):
-	# print "\t+ Working on class #%d" % m
-	# sys.stdout.write("\033[F")
-	# sys.stdout.flush()
-
 	suffix_array = []
 
 	if len(classes[m]) == 1:
@@ -192,13 +187,8 @@ for m in range(0, len(classes)):
 	for w1, w2 in combinations(classes[m], 2):
 		append(suffix_array, lcs(w1, w2))
 	
-	#suffix_array = list(starmap(lcs, combinations(classes[m], 2)))
-
-
 	# combining two counters, local and global (so far)
 	frequencies_temp = frequencies_temp + Counter(suffix_array)		
-
-#print "\t+ Working on class #%d" % len(classes)
 
 # Removing suffixes with frequency less than alpha
 print "\t+ Doing some improvement..."
@@ -221,9 +211,7 @@ for i in range(0, cutoff):
 
 print "\t+ |V|=%d" % g.vcount()
 
-c_edge = 0
 for m in range(0, len(classes)):
-
 	if len(classes[m]) == 1:
 		continue
 
@@ -232,13 +220,6 @@ for m in range(0, len(classes)):
 
 	for w1, w2 in alpha_suffix_array:
 		g.add_edge(w1, w2, weight=frequencies[lcs(w1, w2)])
-
-		# print "\t+ Adding edge #%d" % c_edge
-		# sys.stdout.write("\033[F")
-		# sys.stdout.flush()
-		# c_edge += 1
-		
-#sys.stdout.write("\r\033[K")
 
 # if something weird happened
 if len(g.es) == 0:
@@ -283,11 +264,6 @@ while (g.vcount() != 0) and not early_quitting:  #while pricipale (finche' il so
 	# output class S
 	classes.append([g.vs[v]["name"] for v in S])
 	
-	# print "\t+ %d class created." % jj
-	# sys.stdout.write("\033[F")							# printing on the same line
-	# sys.stdout.flush()
-	# jj += 1
-
 	# Rimuovo da G i veritici in S e gli archi incidenti
 	g.delete_vertices(S)
 
@@ -296,13 +272,10 @@ while (g.vcount() != 0) and not early_quitting:  #while pricipale (finche' il so
 	if len(g.es) == 0:
 		early_quitting = True
 
-#print "\t+ %d class created." % jj
-
 # when quitting with early_quitting=True there're still vertex in the graph to be added in some class(es)
 # I assume that there'd go in singleton sets ---> ???
 if early_quitting:
 	print "\t+ Adding additional %d singletons." % len(g.vs)
-
 	classes += [[v["name"]] for v in g.vs]
 
 # removing names
