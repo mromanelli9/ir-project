@@ -12,6 +12,7 @@ from collections import Counter
 from igraph import *
 import igraph.vendor.texttable				# required for py2exe
 from operator import itemgetter
+from itertools import product, combinations, izip
 
 ##############################################################
 ###############   FUNCTIONS AND SUBROUTINES   ################
@@ -175,17 +176,22 @@ print "+ Done (%d word classes created)." % len(classes)
 ###################### Algorithm #1 ############################
 print "+ Computing alpha-frequencies..."
 frequencies_temp = Counter({})
-suffix_array = []
+append = list.append				# speed-up
 i = 0
 for m in range(0, len(classes)):
 	# print "\t+ Working on class #%d" % m
 	# sys.stdout.write("\033[F")
 	# sys.stdout.flush()
 
-	# computing pairs of suffixes (current class)
-	suffix_array = [lcs(classes[m][j], classes[m][k]) for j in range(0, len(classes[m]))
-													for k in range(j+1, len(classes[m]))]
+	suffix_array = []
 
+	if len(classes[m]) == 1:
+		continue
+
+	# computing pairs of suffixes (current class)
+	for w1, w2 in combinations(classes[m], 2):
+		append(suffix_array, lcs(w1, w2))
+	
 	# combining two counters, local and global (so far)
 	frequencies_temp = frequencies_temp + Counter(suffix_array)		
 
