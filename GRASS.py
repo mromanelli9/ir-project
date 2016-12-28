@@ -85,7 +85,7 @@ def help_message():
 # Default stemmer parameters
 l = None
 l_forced = False
-alpha = 6
+alpha = 4
 delta = 0.8
 readnumbers = True
 
@@ -303,7 +303,7 @@ while (g.vcount() != 0) and not early_quitting:  #while pricipale (finche' il so
 if early_quitting:
 	print "\t+ Adding additional %d singletons." % len(g.vs)
 
-	classes += [v["name"] for v in g.vs]
+	classes += [[v["name"]] for v in g.vs]
 
 # removing names
 del g
