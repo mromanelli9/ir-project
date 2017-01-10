@@ -57,7 +57,11 @@ def lexicon_parser(path, readnumbers=True):
 		return [], 0
 
 	for w in fp:
-		word = w[:w.index(',')].strip()
+		try:
+			word = w[:w.index(',')].strip()
+		except:
+			print "Oops!  word wrong at line %d" % pos # se manca la virgola o altro
+			sys.exit()
 		if word[0].isdigit() and not readnumbers:
 			continue
 		lexicon.append(word.decode("utf-8"))			# potrebbe portare a errori?
@@ -175,7 +179,7 @@ print "+ Done (%d word classes created)." % len(classes)
 ###################### Algorithm #1 ############################
 print "+ Computing alpha-frequencies..."
 frequencies_temp = Counter({})
-append = list.append				#Â speed-up
+append = list.append				# speed-up
 i = 0
 for m in range(0, len(classes)):
 	suffix_array = []
