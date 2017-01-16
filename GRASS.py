@@ -13,6 +13,9 @@ from igraph import *
 import igraph.vendor.texttable				# required for py2exe
 from operator import itemgetter
 from itertools import combinations, takewhile
+import cPickle as pickle
+from numpy import mean
+
 
 # Set the interpreter's 'check interval', how often to perform periodic checks
 sys.setcheckinterval = 1000
@@ -41,11 +44,8 @@ def lcs(x, y):
 def cohesion(p_neighbors, v_neighbors):
 	return (1 + len(set(p_neighbors).intersection(v_neighbors))) / len(v_neighbors)
 
-def lexicon_parser(path, readnumbers=True):
+def lexicon_parser(path, readnumbers=True, lower_bound=0, upper_bound=None):
 	# assuming path is a regular file path
-	words_lengths = []
-	average_length = 0
-	lexicon_n = 0
 	lexicon = []
 
 	fp = open(lexicon_path, "r")
@@ -65,12 +65,15 @@ def lexicon_parser(path, readnumbers=True):
 		if word[0].isdigit() and not readnumbers:
 			continue
 		lexicon.append(word.decode("utf-8"))			# potrebbe portare a errori?
-		words_lengths.append(len(word))
 
 	fp.close()
 
-	lexicon_n = len(lexicon)
-	average_length = sum(words_lengths) / len(lexicon)
+	if lower_bound != 0:
+		lexicon = lexicon[lower_bound:]
+	if upper_bound != None:
+		lexicon = lexicon[:(upper_bound-lower_bound)]
+
+	average_length = int(mean([len(w) for w in lexicon]))
 
 	return lexicon, average_length
 
@@ -91,8 +94,9 @@ alpha = 4
 delta = 0.8
 readnumbers = True
 
-# Other variables
-cutoff = None
+# other "global" variables
+freq_filename_dump = "suffix_pair_freq_l-p1.txt"
+freq_filename_load = None
 
 # Output file path
 stems_file_path = "stems.txt"
@@ -103,7 +107,7 @@ if len(sys.argv) < 2:
 # Overriding value if passed as argument in command line
 lexicon_path = None
 try:
-	opts, args = getopt(sys.argv[1:], "l:", ["alpha=", "delta=", "l=", "cut-off=", "no-numbers"])
+	opts, args = getopt(sys.argv[1:], "l:", ["alpha=", "delta=", "l=", "no-numbers", "freq-file="])
 except GetoptError:          
 	    help_message()
 for opt, arg in opts:     
@@ -119,22 +123,20 @@ for opt, arg in opts:
 		l_forced = True
 	elif opt == '--delta':                
 		delta = float(arg)
-	elif opt == '--cut-off':                
-		cutoff = int(arg)
 	elif opt == '--no-numbers':                
 		readnumbers = False
-		print "+ [OPTION] Do not parse numbers." 
+		print "+ [OPTION] Do not parse numbers."
+	elif opt == '--freq-file':                
+		freq_filename_load = str(arg)
+		print "+ [OPTION] Suffix pair frequencies file selected." 
 
 if lexicon_path is None:
 	print "- Missing lexicon file."                        
 	sys.exit()
 
 print "+ Parsing lexicon..."
+#lexicon, average_length = lexicon_parser(lexicon_path, readnumbers, 100, 105)
 lexicon, average_length = lexicon_parser(lexicon_path, readnumbers)
-
-# limit cutoff to lexicon's length
-if cutoff and cutoff > len(lexicon):
-	cutoff = len(lexicon)
 
 if len(lexicon) == 0:
 	print "- Error while parsing the lexicon."
@@ -149,7 +151,6 @@ if not l_forced:
 	l = average_length
 del average_length
 
-
 print "+ Parameters:"
 print "\t+ l = %d" % l
 print "\t+ alpha = %d" % alpha
@@ -161,9 +162,7 @@ classes = [[]]
 # clustering words into classes
 i = 0
 j = 0
-if not cutoff:
-	cutoff = len(lexicon)
-while i < cutoff:
+while i < len(lexicon):
 	w1 = lexicon[i]
 	w2 = lexicon[i+1] if (i < len(lexicon)-1) else ""
 	classes[j].append(w1)
@@ -175,24 +174,41 @@ while i < cutoff:
 del classes[j]	# empty class
 print "+ Done (%d word classes created)." % len(classes)
 
-
+# If no freq file found compute it:
+if freq_filename_load == None:
 ###################### Algorithm #1 ############################
-print "+ Computing alpha-frequencies..."
-frequencies_temp = Counter({})
-append = list.append				# speed-up
-i = 0
-for m in range(0, len(classes)):
-	suffix_array = []
+	print "+ Computing alpha-frequencies..."
+	frequencies_temp = Counter({})
+	append = list.append				# speed-up
+	i = 0
+	for m in range(0, len(classes)):
+		suffix_array = []
 
-	if len(classes[m]) == 1:
-		continue
+		if len(classes[m]) == 1:
+			continue
 
-	# computing pairs of suffixes (current class)
-	for w1, w2 in combinations(classes[m], 2):
-		append(suffix_array, lcs(w1, w2))
+		# computing pairs of suffixes (current class)
+		for w1, w2 in combinations(classes[m], 2):
+			append(suffix_array, lcs(w1, w2))
+		
+		# combining two counters, local and global (so far)
+		frequencies_temp = frequencies_temp + Counter(suffix_array)
+
+	print "+ %d \"raw\" suffixes pair found." % len(frequencies_temp)
+
+	# Storing "raw" suffix pair frequencies for further uses
+	freq_filename_dump = freq_filename_dump.replace("p1", str(l))
+	pickle.dump(frequencies_temp, open(freq_filename_dump, "wb"))
+
+	# Removing names (clear memory)
+	del suffix_array
+
+else:
+	# otherwise load it
+	with open(freq_filename_load, "rb") as fp:
+		frequencies_temp = pickle.load(fp)
 	
-	# combining two counters, local and global (so far)
-	frequencies_temp = frequencies_temp + Counter(suffix_array)		
+	print "+ Load external \"raw\" suffix pair (%s)." % len(frequencies_temp)
 
 # Removing suffixes with frequency less than alpha
 print "\t+ Doing some improvement..."
@@ -200,17 +216,14 @@ print "\t+ Doing some improvement..."
 frequencies = {k:v for k,v in frequencies_temp.iteritems() if v >= alpha}
 
 print "+ Done: %d alpha-suffixes found." % len(frequencies)
-
-# Removing names (clear memory)
 del frequencies_temp
-del suffix_array
 
 
 print "+ Generating graph G=(V,E) ..."
 g = Graph(directed=False)
 
 # creating a vertex foreach word in the lexicon
-for i in range(0, cutoff):  
+for i in range(0, len(lexicon)):  
 	g.add_vertex(lexicon[i])
 
 print "\t+ |V|=%d" % g.vcount()
