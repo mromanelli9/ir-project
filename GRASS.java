@@ -429,10 +429,31 @@ public class GRASS
 
 	public static void storeStems(ArrayList<ArrayList<String>> classes, String filename)
 	{
-		 BufferedWriter buffer = null;
-		 String stem;
-		 FileWriter fw;
-		 File fp;
+		ArrayList<String> output = new ArrayList<String>();
+		BufferedWriter buffer = null;
+		Iterator iter;
+		String stem, s;
+		FileWriter fw;
+		File fp;
+
+		// Sorting words
+		for (ArrayList<String> cc : classes)
+		{
+
+			stem = cc.get(0);
+			if (cc.size() == 1)
+				s = stem + "\t" + stem + "\n";
+			else
+			{
+				s = new String();
+				iter = cc.listIterator();
+				iter.next();
+				while (iter.hasNext())
+					s += iter.next() + "\t" + stem + "\n";
+			}
+			output.add(s);
+		}
+		Collections.sort(output);
 
 		 try
 		 {
@@ -441,15 +462,8 @@ public class GRASS
 			 fw = new FileWriter(fp);
 			 buffer = new BufferedWriter(fw);
 
-			 for (ArrayList<String> cc : classes)
-			 {
-				 stem = cc.get(0);
-				 if (cc.size() == 1)
-				 	buffer.write(stem + "\t" + stem + "\n");
-				else
-					 for (int i = 1; i < cc.size(); i++)
-					 	buffer.write(cc.get(i) + "\t" + stem + "\n");
-			 }
+			 for (String line : output)
+			 	buffer.write(line);
 		 }
 		 catch (IOException e)
 		 {
