@@ -160,6 +160,9 @@ public class GRASS
 			String word = null;
 
 			int i = 0;
+			// Skip the first 2 lines
+			while ((line = in.readLine()) != null && (i++ < 1)) continue;
+
 			while ((line = in.readLine()) != null) {
 				word = line.split(",")[0];
 				filedata.add(word);
