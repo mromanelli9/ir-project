@@ -86,6 +86,10 @@ public class GRASS
 		graph = generateGraph(wordClasses, suffixes);
 		System.out.format("+ Done. (|V|=%d, |E|=%d)\n", graph.vertexSet().size(), graph.edgeSet().size());
 
+		// "delete" word classes
+		lexicon = null;
+		wordClasses = null;
+
 		// Identify classes
 		System.out.println("+ Identifying classes...");
 		stemClasses = algorithm2(graph);
@@ -123,7 +127,7 @@ public class GRASS
 			else
 				System.out.printf("\t+ l = %d (forced to this value)\n", l);
 
-			System.out.printf("\t+ alpha = %d\n\t+ delta = %.1f\n", alpha, delta);
+			System.out.printf("\t+ alpha = %d\n\t+ delta = %.2f\n", alpha, delta);
 
 		}
 		catch (IOException e)
