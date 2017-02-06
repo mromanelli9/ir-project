@@ -86,7 +86,7 @@ public class GRASS
 		graph = generateGraph(wordClasses, suffixes);
 		System.out.format("+ Done. (|V|=%d, |E|=%d)\n", graph.vertexSet().size(), graph.edgeSet().size());
 
-		// "delete" word classes
+		// "delete" unused objects
 		lexicon = null;
 		wordClasses = null;
 
@@ -94,6 +94,9 @@ public class GRASS
 		System.out.println("+ Identifying classes...");
 		stemClasses = algorithm2(graph);
 		System.out.format("+ Done. (%d).\n", stemClasses.size());
+
+		// "delete" unused ojbects
+		graph = null;
 
 		// Writing to file...
 		System.out.printf("+ Writing stems to file \"%s\"\n", stem_filename);
