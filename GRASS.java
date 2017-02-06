@@ -99,6 +99,7 @@ public class GRASS
 		graph = null;
 
 		// Writing to file...
+		stem_filename += stem_filename.format("_%s_%s_0%s.txt", l, alpha, (int)(delta*10));
 		System.out.printf("+ Writing stems to file \"%s\"\n", stem_filename);
 		storeStems(stemClasses, stem_filename);
 		System.out.println("+ Stems stored!");
